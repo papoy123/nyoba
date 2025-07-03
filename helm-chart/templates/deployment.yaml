@@ -8,11 +8,13 @@ spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ include "nyoba.fullname" . }}
+      app.kubernetes.io/name: {{ include "nyoba.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app: {{ include "nyoba.fullname" . }}
+        app.kubernetes.io/name: {{ include "nyoba.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
     spec:
       containers:
         - name: nyoba
@@ -29,13 +31,17 @@ spec:
               memory: 256Mi
           livenessProbe:
             httpGet:
-              path: /api/health
+              path: /login
               port: {{ .Values.containerPort }}
             initialDelaySeconds: 60
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 6
           readinessProbe:
             httpGet:
-              path: /api/health
+              path: /login
               port: {{ .Values.containerPort }}
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

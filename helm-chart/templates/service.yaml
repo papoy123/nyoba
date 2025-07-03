@@ -5,8 +5,10 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   selector:
-    app: {{ include "nyoba.fullname" . }}
+    app.kubernetes.io/name: {{ include "nyoba.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: {{ .Values.containerPort }}
+      nodePort: {{ .Values.service.nodePort }}
       protocol: TCP
