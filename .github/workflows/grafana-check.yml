@@ -1,4 +1,4 @@
-name: Deploy and Check Grafana
+name: Deploy and Check Grafana to Minikube
 
 on:
   push:
@@ -8,16 +8,23 @@ on:
 
 jobs:
   deploy-and-check:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Minikube
+        uses: medyagh/setup-minikube@latest
+
+      - name: Create namespace if not exists
+        run: |
+          kubectl get ns grafana || kubectl create ns grafana
 
       - name: Helm upgrade/install Grafana
         run: |
           echo "Deploy Grafana dengan Helm"
-          helm upgrade --install nyoba ./helm-chart --namespace grafana --create-namespace
+          helm upgrade --install nyoba ./helm-chart --namespace grafana --create-namespace --wait
 
       - name: Tunggu pod Grafana siap
         run: |
@@ -26,6 +33,9 @@ jobs:
 
       - name: Cek koneksi ke Grafana
         run: |
+          echo "Forward port Grafana..."
+          kubectl port-forward svc/nyoba 3000:3000 -n grafana &
+          sleep 10
           echo "Cek koneksi ke Grafana di http://localhost:3000"
           curl -I http://localhost:3000 || { echo "Gagal konek ke Grafana"; exit 1; }
 
