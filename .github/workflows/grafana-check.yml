@@ -1,22 +1,38 @@
-name: Test Grafana API
+name: Deploy and Check Grafana
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
-  grafana-check:
+  deploy-and-check:
     runs-on: self-hosted
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Helm upgrade/install Grafana
+        run: |
+          echo "Deploy Grafana dengan Helm"
+          helm upgrade --install nyoba ./helm-chart --namespace grafana --create-namespace
+
+      - name: Tunggu pod Grafana siap
+        run: |
+          echo "Menunggu pod Grafana siap..."
+          kubectl wait --namespace grafana --for=condition=Ready pod -l app.kubernetes.io/name=nyoba --timeout=120s
+
       - name: Cek koneksi ke Grafana
         run: |
           echo "Cek koneksi ke Grafana di http://localhost:3000"
-          curl -I http://localhost:3000
+          curl -I http://localhost:3000 || { echo "Gagal konek ke Grafana"; exit 1; }
 
-      - name: Cek login admin
+      - name: Cek login admin Grafana
         env:
           GRAFANA_USER: admin
           GRAFANA_PASS: ${{ secrets.GRAFANA_PASS }}
         run: |
           echo "Cek login menggunakan API"
-          curl -s -u $GRAFANA_USER:$GRAFANA_PASS http://localhost:3000/api/org | jq
+          curl -s -u $GRAFANA_USER:$GRAFANA_PASS http://localhost:3000/api/org | jq || { echo "Login gagal"; exit 1; }
